@@ -1,23 +1,56 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TaskFlow</title>
-  <!-- Load Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
   <style>
-    body { font-family: Arial, sans-serif; }
-    #taskInput { padding: 8px; }
-    button { padding: 8px 12px; background: #4285f4; color: white; border: none; }
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #taskInput {
+      padding: 10px;
+      width: 70%;
+      margin-right: 10px;
+    }
+    button {
+      padding: 10px 15px;
+      background-color: #4285f4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+    }
+    li {
+      padding: 10px;
+      background: #f5f5f5;
+      margin-bottom: 5px;
+      border-radius: 4px;
+    }
   </style>
 </head>
 <body>
-  <input type="text" id="taskInput" placeholder="Enter task">
-  <button onclick="addTask()">Add Task</button>
+  <h1>Task Manager</h1>
+  <div>
+    <input type="text" id="taskInput" placeholder="Enter a new task">
+    <button onclick="addTask()">Add Task</button>
+  </div>
   <ul id="taskList"></ul>
 
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+
   <script>
-    // Firebase config (replace with yours)
+    // Your existing Firebase config - REPLACE WITH YOUR ACTUAL CONFIG
   const firebaseConfig = {
   apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
   authDomain: "twentyfive-68777.firebaseapp.com",
@@ -27,35 +60,58 @@
   appId: "1:81523227450:web:df2cf1ac868847a404ee03",
   measurementId: "G-WPFP3NHVH0"
 };
-
     // Initialize Firebase
-    firebase.initializeApp(firebaseConfig);
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
     const db = firebase.firestore();
 
-    // Add task function
+    // Add a new task
     function addTask() {
       const taskInput = document.getElementById("taskInput");
-      if (!taskInput.value.trim()) return;
+      const taskText = taskInput.value.trim();
       
+      if (taskText === "") {
+        alert("Please enter a task!");
+        return;
+      }
+
       db.collection("tasks").add({
-        text: taskInput.value,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        text: taskText,
+        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+        completed: false
+      })
+      .then(() => {
+        taskInput.value = "";
+      })
+      .catch((error) => {
+        console.error("Error adding task: ", error);
+        alert("Error adding task. Please check console for details.");
       });
-      taskInput.value = "";
     }
 
-    // Load tasks
-    db.collection("tasks")
-      .orderBy("timestamp")
-      .onSnapshot(snapshot => {
-        const taskList = document.getElementById("taskList");
-        taskList.innerHTML = "";
-        snapshot.forEach(doc => {
-          const li = document.createElement("li");
-          li.textContent = doc.data().text;
-          taskList.appendChild(li);
+    // Load and display tasks
+    function loadTasks() {
+      db.collection("tasks")
+        .orderBy("createdAt")
+        .onSnapshot((querySnapshot) => {
+          const taskList = document.getElementById("taskList");
+          taskList.innerHTML = "";
+          
+          querySnapshot.forEach((doc) => {
+            const task = doc.data();
+            const li = document.createElement("li");
+            li.innerHTML = `
+              <span>${task.text}</span>
+              <small>${task.createdAt?.toDate().toLocaleString() || ''}</small>
+            `;
+            taskList.appendChild(li);
+          });
         });
-      });
+    }
+
+    // Load tasks when page loads
+    window.onload = loadTasks;
   </script>
 </body>
 </html>
