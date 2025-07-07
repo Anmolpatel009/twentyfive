@@ -2,24 +2,33 @@
 <html>
 <head>
   <title>TaskFlow</title>
+  <!-- Load Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; }
+    #taskInput { padding: 8px; }
+    button { padding: 8px 12px; background: #4285f4; color: white; border: none; }
+  </style>
 </head>
 <body>
-  <input type="text" id="taskInput">
+  <input type="text" id="taskInput" placeholder="Enter task">
   <button onclick="addTask()">Add Task</button>
   <ul id="taskList"></ul>
 
   <script>
+    // Firebase config (replace with yours)
+  const firebaseConfig = {
+  apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
+  authDomain: "twentyfive-68777.firebaseapp.com",
+  projectId: "twentyfive-68777",
+  storageBucket: "twentyfive-68777.firebasestorage.app",
+  messagingSenderId: "81523227450",
+  appId: "1:81523227450:web:df2cf1ac868847a404ee03",
+  measurementId: "G-WPFP3NHVH0"
+};
+
     // Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "your-project.firebaseapp.com",
-      projectId: "your-project",
-      storageBucket: "your-project.appspot.com",
-      messagingSenderId: "123456789",
-      appId: "1:123456789:web:abcd1234"
-    };
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
@@ -36,15 +45,17 @@
     }
 
     // Load tasks
-    db.collection("tasks").orderBy("timestamp").onSnapshot(snapshot => {
-      const taskList = document.getElementById("taskList");
-      taskList.innerHTML = "";
-      snapshot.forEach(doc => {
-        const li = document.createElement("li");
-        li.textContent = doc.data().text;
-        taskList.appendChild(li);
+    db.collection("tasks")
+      .orderBy("timestamp")
+      .onSnapshot(snapshot => {
+        const taskList = document.getElementById("taskList");
+        taskList.innerHTML = "";
+        snapshot.forEach(doc => {
+          const li = document.createElement("li");
+          li.textContent = doc.data().text;
+          taskList.appendChild(li);
+        });
       });
-    });
   </script>
 </body>
 </html>
