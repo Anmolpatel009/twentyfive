@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Task Marketplace</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input, select, textarea {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .role-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #eee;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4285f4;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background-color: #3367d6;
+        }
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Sign Up</h1>
+    <form id="signupForm">
+        <div class="form-group">
+            <label>You want to join as:</label>
+            <select id="userType" required>
+                <option value="">Select Role</option>
+                <option value="freelancer">Freelancer (Offer Services)</option>
+                <option value="client">Client (Post Tasks)</option>
+            </select>
+        </div>
+
+        <!-- Common Fields for All Users -->
+        <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password</label>
+            <input type="password" id="password" minlength="6" required>
+        </div>
+        <div class="form-group">
+            <label for="phone">Phone Number</label>
+            <input type="tel" id="phone" required>
+        </div>
+        <div class="form-group">
+            <label for="address">Address</label>
+            <textarea id="address" rows="3" required></textarea>
+        </div>
+        <div class="form-group">
+            <label for="location">Location (Latitude, Longitude)</label>
+            <input type="text" id="location" placeholder="e.g., 40.7128, -74.0060" required>
+            <small>We'll add a map picker later</small>
+        </div>
+
+        <!-- Freelancer Specific Fields -->
+        <div id="freelancerFields" class="role-section hidden">
+            <h3>Freelancer Details</h3>
+            <div class="form-group">
+                <label for="fullName">Full Name</label>
+                <input type="text" id="fullName">
+            </div>
+            <div class="form-group">
+                <label for="skills">Skills</label>
+                <input type="text" id="skills" placeholder="e.g., Web Development, Graphic Design">
+            </div>
+            <div class="form-group">
+                <label for="services">Services You Offer</label>
+                <textarea id="services" rows="3" placeholder="Describe services you provide"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="experience">Years of Experience</label>
+                <input type="number" id="experience" min="0">
+            </div>
+            <div class="form-group">
+                <label for="hourlyRate">Hourly Rate ($)</label>
+                <input type="number" id="hourlyRate" min="0" step="5">
+            </div>
+        </div>
+
+        <!-- Client Specific Fields -->
+        <div id="clientFields" class="role-section hidden">
+            <h3>Client Details</h3>
+            <div class="form-group">
+                <label for="companyName">Company/Organization Name</label>
+                <input type="text" id="companyName">
+            </div>
+            <div class="form-group">
+                <label for="industry">Industry</label>
+                <input type="text" id="industry" placeholder="e.g., Technology, Construction">
+            </div>
+        </div>
+
+        <button type="submit">Complete Sign Up</button>
+    </form>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
+    
+    <script>
+        // Initialize Firebase (replace with your config)
+        const firebaseConfig = {
+      apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
+      authDomain: "twentyfive-68777.firebaseapp.com",
+      projectId: "twentyfive-68777",
+      storageBucket: "twentyfive-68777.firebasestorage.app",
+      messagingSenderId: "81523227450",
+      appId: "1:81523227450:web:df2cf1ac868847a404ee03",
+      measurementId: "G-WPFP3NHVH0"
+    };
+        firebase.initializeApp(firebaseConfig);
+
+        // Show/hide role-specific fields
+        document.getElementById('userType').addEventListener('change', function() {
+            const userType = this.value;
+            document.getElementById('freelancerFields').classList.toggle('hidden', userType !== 'freelancer');
+            document.getElementById('clientFields').classList.toggle('hidden', userType !== 'client');
+        });
+
+        // Handle form submission
+        document.getElementById('signupForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const userType = document.getElementById('userType').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const phone = document.getElementById('phone').value;
+            const address = document.getElementById('address').value;
+            const location = document.getElementById('location').value.split(',').map(coord => parseFloat(trim(coord)));
+            
+            try {
+                // 1. Create Firebase Auth account
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(email, password);
+                
+                // 2. Save additional user data to Firestore
+                const userData = {
+                    email,
+                    phone,
+                    address,
+                    location: new firebase.firestore.GeoPoint(location[0], location[1]),
+                    userType,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                };
+
+                // Add role-specific data
+                if (userType === 'freelancer') {
+                    userData.freelancerProfile = {
+                        fullName: document.getElementById('fullName').value,
+                        skills: document.getElementById('skills').value.split(',').map(skill => skill.trim()),
+                        services: document.getElementById('services').value,
+                        experience: parseInt(document.getElementById('experience').value),
+                        hourlyRate: parseInt(document.getElementById('hourlyRate').value)
+                    };
+                } else if (userType === 'client') {
+                    userData.clientProfile = {
+                        companyName: document.getElementById('companyName').value,
+                        industry: document.getElementById('industry').value
+                    };
+                }
+
+                await firebase.firestore().collection('users').doc(userCredential.user.uid).set(userData);
+                
+                alert('Account created successfully!');
+                // Redirect to dashboard or login page
+                window.location.href = '/dashboard.html';
+            } catch (error) {
+                console.error('Error:', error);
+                alert('Signup failed: ' + error.message);
+            }
+        });
+
+        function trim(str) {
+            return str.replace(/^\s+|\s+$/g, '');
+        }
+    </script>
+</body>
+</html>
