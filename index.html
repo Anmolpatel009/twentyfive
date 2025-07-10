@@ -1058,9 +1058,10 @@
       const posterEmail = document.getElementById('posterEmail').value.trim();
       const posterPhone = document.getElementById('posterPhone').value.trim();
       const timeframe = document.getElementById('timeframe').value;
+      const posterWillPay = document.getElementById('posterWillPay').value.trim();
 
       // Basic validation
-      if (!taskTitle || !taskDescription || !taskLocation || !posterName || !posterEmail || !posterPhone) {
+      if (!taskTitle || !taskDescription || !taskLocation || !posterName || !posterEmail || !posterPhone || !  posterWillPay) {
         alert('Please fill in all required fields.');
         return;
       }
@@ -1083,6 +1084,7 @@
         posterName: posterName,
         posterEmail: posterEmail,
         posterPhone: posterPhone,
+        posterWillPay:posterWillPay
         timeframe: timeframe || 'flexible',
         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
         status: 'open'
