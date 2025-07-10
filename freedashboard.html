@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Freelancer Dashboard</title>
+  
+  <!-- ======================= CSS ======================= -->
+  <style>
+    /* === BASE STYLES === */
+    :root {
+      --primary: #4361ee;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --danger: #e74c3c;
+    }
+    
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    /* === DASHBOARD LAYOUT === */
+    .dashboard {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 30px;
+    }
+    
+    .status-toggle {
+      justify-self: end;
+      margin-bottom: 20px;
+    }
+    
+    select#availability {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+      background: white;
+    }
+    
+    /* === PROJECT CARDS === */
+    .project-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 20px;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      transition: transform 0.3s;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .card h4 {
+      margin: 0 0 10px;
+      color: var(--primary);
+    }
+    
+    .claim-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-top: 15px;
+      width: 100%;
+    }
+    
+    /* === STATUS INDICATORS === */
+    .status-badge {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+    }
+    
+    .status-badge.available { background: var(--success); }
+    .status-badge.busy { background: var(--warning); }
+    
+    /* === ASSIGNED PROJECTS === */
+    .assigned-project {
+      background: #f8f9fa;
+      border-left: 4px solid var(--primary);
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ======================= HTML ======================= -->
+  <div class="dashboard">
+    <!-- Status Toggle -->
+    <div class="status-toggle">
+      <select id="availability">
+        <option value="available">🟢 Available</option>
+        <option value="busy">🟡 Busy</option>
+      </select>
+    </div>
+    
+    <!-- Open Projects Section -->
+    <div class="projects-list">
+      <h2>Available Projects</h2>
+      <div id="openProjects" class="project-cards"></div>
+    </div>
+    
+    <!-- Assigned Projects Section -->
+    <div class="my-projects">
+      <h2>My Projects</h2>
+      <div id="assignedProjects"></div>
+    </div>
+  </div>
+
+  <!-- Status Indicator -->
+  <div id="statusIndicator" class="status-badge"></div>
+
+  <!-- ======================= JAVASCRIPT ======================= -->
+  <script type="module">
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "YOUR_API_KEY",
+      authDomain: "YOUR_PROJECT.firebaseapp.com",
+      projectId: "YOUR_PROJECT",
+      storageBucket: "YOUR_PROJECT.appspot.com",
+      messagingSenderId: "YOUR_SENDER_ID",
+      appId: "YOUR_APP_ID"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const auth = firebase.auth();
+
+    // ====== REAL-TIME PROJECT LOADER ======
+    function loadOpenProjects() {
+      db.collection("projects")
+        .where("status", "==", "open")
+        .onSnapshot((snapshot) => {
+          const container = document.getElementById("openProjects");
+          container.innerHTML = "";
+          
+          snapshot.forEach(doc => {
+            const project = doc.data();
+            container.innerHTML += `
+              <div class="card" data-id="${doc.id}">
+                <h4>${project.title}</h4>
+                <p>$${project.budget} • ${project.category}</p>
+                <p>${project.description.substring(0, 100)}...</p>
+                <button class="claim-btn">Claim Project</button>
+              </div>
+            `;
+          });
+
+          // Add event listeners to new buttons
+          document.querySelectorAll('.claim-btn').forEach(btn => {
+            btn.addEventListener('click', claimProject);
+          });
+        });
+    }
+
+    // ====== PROJECT CLAIM FUNCTION ======
+    async function claimProject(e) {
+      const projectCard = e.target.closest('.card');
+      const projectId = projectCard.dataset.id;
+      const freelancerId = auth.currentUser.uid;
+
+      try {
+        // Atomic transaction
+        await db.runTransaction(async (transaction) => {
+          const projectRef = db.collection("projects").doc(projectId);
+          const freelancerRef = db.collection("freelancers").doc(freelancerId);
+          
+          const project = await transaction.get(projectRef);
+          if (project.data().status !== "open") throw "Project already taken";
+
+          transaction.update(projectRef, {
+            status: "assigned",
+            freelancerId: freelancerId,
+            assignedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          transaction.update(freelancerRef, {
+            currentProjects: firebase.firestore.FieldValue.arrayUnion(projectId),
+            activityStatus: "busy"
+          });
+        });
+
+        // Update UI immediately
+        projectCard.remove();
+        document.getElementById('availability').value = "busy";
+        alert("Successfully claimed project!");
+        
+      } catch (error) {
+        alert("Error: " + error);
+      }
+    }
+
+    // ====== ACTIVITY STATUS SYSTEM ======
+    function initStatusSystem() {
+      // Status Change Handler
+      document.getElementById('availability').addEventListener('change', (e) => {
+        const freelancerRef = db.collection("freelancers").doc(auth.currentUser.uid);
+        freelancerRef.update({
+          activityStatus: e.target.value
+        });
+      });
+
+      // Real-time Status Indicator
+      db.collection("freelancers")
+        .doc(auth.currentUser.uid)
+        .onSnapshot((doc) => {
+          const status = doc.data()?.activityStatus || "available";
+          const indicator = document.getElementById("statusIndicator");
+          indicator.className = `status-badge ${status}`;
+          indicator.title = `Status: ${status.toUpperCase()}`;
+        });
+    }
+
+    // ====== LOAD ASSIGNED PROJECTS ======
+    function loadAssignedProjects() {
+      const freelancerId = auth.currentUser.uid;
+      
+      db.collection("projects")
+        .where("freelancerId", "==", freelancerId)
+        .onSnapshot((snapshot) => {
+          const container = document.getElementById("assignedProjects");
+          container.innerHTML = "";
+          
+          snapshot.forEach(doc => {
+            const project = doc.data();
+            container.innerHTML += `
+              <div class="assigned-project">
+                <h4>${project.title}</h4>
+                <p>Assigned on: ${project.assignedAt?.toDate().toLocaleDateString()}</p>
+              </div>
+            `;
+          });
+        });
+    }
+
+    // ====== INITIALIZE APP ======
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        loadOpenProjects();
+        loadAssignedProjects();
+        initStatusSystem();
+      } else {
+        window.location.href = "login.html";
+      }
+    });
+  </script>
+</body>
+</html>
