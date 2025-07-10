@@ -903,7 +903,12 @@
           <div class="form-group">
             <label for="posterPhone">I CAN PAY (Rs)*</label>
             <input type="tel" id="posterPhone" placeholder="Enter the amount you can pay to service provider" required>
-          </div>
+          </div
+            
+            <div class="form-group">
+  <label for="posterWillPay">Amount You'll Pay (₹) *</label>
+  <input type="number" id="posterWillPay" placeholder="Enter amount" required min="0">
+</div>
           
         </form>
       </div>
@@ -1050,21 +1055,23 @@
     });
 
     // Submit Task
-    submitTaskBtn.addEventListener('click', () => {
-      const taskTitle = document.getElementById('taskTitle').value.trim();
-      const taskDescription = document.getElementById('taskDescription').value.trim();
-      const taskLocation = document.getElementById('taskLocation').value.trim();
-      const posterName = document.getElementById('posterName').value.trim();
-      const posterEmail = document.getElementById('posterEmail').value.trim();
-      const posterPhone = document.getElementById('posterPhone').value.trim();
-      const timeframe = document.getElementById('timeframe').value;
-      const posterWillPay = document.getElementById('posterWillPay').value.trim();
+   submitTaskBtn.addEventListener('click', () => {
+  // Get all form values
+  const taskTitle = document.getElementById('taskTitle').value.trim();
+  const taskDescription = document.getElementById('taskDescription').value.trim();
+  const taskLocation = document.getElementById('taskLocation').value.trim();
+  const posterName = document.getElementById('posterName').value.trim();
+  const posterEmail = document.getElementById('posterEmail').value.trim();
+  const posterPhone = document.getElementById('posterPhone').value.trim();
+  const timeframe = document.getElementById('timeframe').value;
+  const posterWillPay = document.getElementById('posterWillPay').value.trim(); // Now this will work
 
-      // Basic validation
-      if (!taskTitle || !taskDescription || !taskLocation || !posterName || !posterEmail || !posterPhone || !  posterWillPay) {
-        alert('Please fill in all required fields.');
-        return;
-      }
+  // Validation
+  if (!taskTitle || !taskDescription || !taskLocation || 
+      !posterName || !posterEmail || !posterPhone || !posterWillPay) {
+    alert('Please fill in all required fields including payment amount.');
+    return;
+  }
 
       // Phone validation
       if (!/^[0-9]{10,15}$/.test(posterPhone)) {
@@ -1115,7 +1122,10 @@
             taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
             return;
           }
-          
+          taskCard.innerHTML = `
+  <div class="task-budget">₹${parseInt(task.posterWillPay).toLocaleString('en-IN')}</div>
+  ...
+`;
           querySnapshot.forEach((doc) => {
             const task = doc.data();
             const taskCard = document.createElement('div');
