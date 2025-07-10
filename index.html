@@ -1112,46 +1112,53 @@
     });
 
     // Load and display tasks
-    function loadTasks() {
-      db.collection("tasks")
-        .orderBy("createdAt", "desc")
-        .onSnapshot((querySnapshot) => {
-          taskList.innerHTML = "";
-          
-          if (querySnapshot.empty) {
-            taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
-            return;
-          }
+   function loadTasks() {
+  db.collection("tasks")
+    .orderBy("createdAt", "desc")
+    .onSnapshot((querySnapshot) => {
+      taskList.innerHTML = "";
+      
+      if (querySnapshot.empty) {
+        taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
+        return;
+      }
 
-          querySnapshot.forEach((doc) => {
-            const task = doc.data();
-            const taskCard = document.createElement('div');
-            taskCard.className = 'task-card';
-            taskCard.innerHTML = `
-              <div class="task-header">
-                <div class="task-title">${task.title}</div>
-                <div class="task-status">${task.status}</div>
-              </div>
-              <div class="task-meta">
-                <div><i class="fas fa-map-marker-alt"></i> ${task.location}</div>
-                <div><i class="fas fa-clock"></i> ${task.timeframe}</div>
-              </div>
-              <div class="task-description">${task.description}</div>
-              <div class="task-footer">
-                <div class="poster-info">
-                  <div class="poster-avatar">${task.posterName.charAt(0)}</div>
-                  <div class="poster-name">${task.posterName}</div>
-                </div>
-                <div class="poster-contact">
-                  <button class="contact-btn"><i class="fas fa-envelope"></i> Email</button>
-                  <button class="contact-btn"><i class="fas fa-phone"></i> Call</button>
-                </div>
-              </div>
-            `;
-            taskList.appendChild(taskCard);
-          });
-        });
-    }
+      querySnapshot.forEach((doc) => {
+        const task = doc.data();
+        const taskCard = document.createElement('div');
+        taskCard.className = 'task-card';
+        taskCard.innerHTML = `
+          <div class="task-header">
+            <div>
+              <div class="task-title">${task.title}</div>
+              <div class="task-price">Budget: ₹${task.posterWillPay?.toLocaleString('en-IN') || 'Not specified'}</div>
+            </div>
+            <div class="task-status">${task.status}</div>
+          </div>
+          <div class="task-meta">
+            <div><i class="fas fa-map-marker-alt"></i> ${task.location}</div>
+            <div><i class="fas fa-clock"></i> ${task.timeframe}</div>
+          </div>
+          <div class="task-description">${task.description}</div>
+          <div class="task-footer">
+            <div class="poster-info">
+              <div class="poster-avatar">${task.posterName?.charAt(0) || '?'}</div>
+              <div class="poster-name">${task.posterName || 'Anonymous'}</div>
+            </div>
+            <div class="poster-contact">
+              <button class="contact-btn" onclick="contactPoster('${task.posterEmail}')">
+                <i class="fas fa-envelope"></i> Email
+              </button>
+              <button class="contact-btn" onclick="contactPoster('${task.posterPhone}', 'phone')">
+                <i class="fas fa-phone"></i> Call
+              </button>
+            </div>
+          </div>
+        `;
+        taskList.appendChild(taskCard);
+      });
+    });
+}
 
     // Initialize the page
     window.onload = function() {
