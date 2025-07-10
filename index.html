@@ -1122,10 +1122,7 @@
             taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
             return;
           }
-          taskCard.innerHTML = `
-  <div class="task-budget">₹${parseInt(task.posterWillPay).toLocaleString('en-IN')}</div>
-  ...
-`;
+
           querySnapshot.forEach((doc) => {
             const task = doc.data();
             const taskCard = document.createElement('div');
