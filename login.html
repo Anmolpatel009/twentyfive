@@ -1,108 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- ======================= META & TITLE ======================= -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Login | Your Freelance Platform</title>
+  <title>Login | Freelance Platform</title>
+
+  <!-- ======================= CSS STYLING ======================= -->
   <style>
+    /* === BASE STYLES === */
     :root {
       --primary: #4361ee;
       --secondary: #10b981;
+      --error: #e74c3c;
     }
     
     body {
-      font-family: 'Segoe UI', sans-serif;
-      background: #f5f7fa;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: #f8fafc;
       display: flex;
       justify-content: center;
       align-items: center;
       min-height: 100vh;
       margin: 0;
+      padding: 20px;
     }
     
-    .login-container {
+    /* === LOGIN CARD === */
+    .login-card {
       width: 100%;
       max-width: 400px;
       padding: 40px;
       background: white;
-      border-radius: 10px;
-      box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+      border-radius: 12px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* === LOGO & HEADINGS === */
+    .brand {
       text-align: center;
-    }
-    
-    .logo {
-      font-size: 28px;
-      font-weight: 700;
-      color: var(--primary);
       margin-bottom: 30px;
-      display: block;
     }
     
-    .logo span {
+    .brand-logo {
+      font-size: 32px;
+      font-weight: 800;
+      color: var(--primary);
+      text-decoration: none;
+    }
+    
+    .brand-logo span {
       color: var(--secondary);
     }
     
-    input {
-      width: 100%;
-      padding: 12px 15px;
-      margin-bottom: 15px;
-      border: 1px solid #ddd;
-      border-radius: 6px;
-      font-size: 16px;
+    .brand-tagline {
+      color: #64748b;
+      margin-top: 8px;
     }
     
-    button {
+    /* === FORM ELEMENTS === */
+    .input-group {
+      margin-bottom: 20px;
+    }
+    
+    .input-label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 500;
+      color: #334155;
+    }
+    
+    .input-field {
       width: 100%;
-      padding: 12px;
+      padding: 12px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      font-size: 15px;
+      transition: border 0.3s;
+    }
+    
+    .input-field:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+    }
+    
+    /* === BUTTONS === */
+    .btn {
+      width: 100%;
+      padding: 14px;
       background: var(--primary);
       color: white;
       border: none;
-      border-radius: 6px;
+      border-radius: 8px;
       font-size: 16px;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
-      transition: background 0.3s;
+      transition: all 0.3s;
     }
     
-    button:hover {
+    .btn:hover {
       background: #3a56d4;
+      transform: translateY(-1px);
     }
     
-    .footer-links {
-      margin-top: 20px;
+    .btn:active {
+      transform: translateY(0);
+    }
+    
+    /* === UTILITY LINKS === */
+    .util-links {
+      margin-top: 25px;
+      text-align: center;
       font-size: 14px;
     }
     
-    .footer-links a {
+    .util-link {
       color: var(--primary);
       text-decoration: none;
+      transition: opacity 0.3s;
+    }
+    
+    .util-link:hover {
+      opacity: 0.8;
+      text-decoration: underline;
+    }
+    
+    /* === ERROR MESSAGE === */
+    .error-message {
+      color: var(--error);
+      font-size: 14px;
+      margin-top: 5px;
+      display: none;
     }
   </style>
 </head>
 <body>
-  <div class="login-container">
-    <a href="index.html" class="logo">Your<span>Logo</span></a>
+  <!-- ======================= HTML STRUCTURE ======================= -->
+  <div class="login-card">
+    <!-- Branding Section -->
+    <div class="brand">
+      <a href="index.html" class="brand-logo">Freelance<span>Pro</span></a>
+      <p class="brand-tagline">Connect with top talent worldwide</p>
+    </div>
     
-    <h2>Welcome back</h2>
-    <p>Login to access your dashboard</p>
+    <!-- Login Form -->
+    <div class="input-group">
+      <label for="email" class="input-label">Email Address</label>
+      <input type="email" id="email" class="input-field" placeholder="you@example.com" required>
+    </div>
     
-    <input type="email" id="email" placeholder="Email address">
-    <input type="password" id="password" placeholder="Password">
+    <div class="input-group">
+      <label for="password" class="input-label">Password</label>
+      <input type="password" id="password" class="input-field" placeholder="••••••••" required>
+      <div id="errorText" class="error-message"></div>
+    </div>
     
-    <button onclick="login()">Login</button>
+    <button id="loginBtn" class="btn">Login</button>
     
-    <div class="footer-links">
-      <a href="forgot-password.html">Forgot password?</a> • 
-      <a href="signup.html">Create account</a>
+    <!-- Utility Links -->
+    <div class="util-links">
+      <a href="forgot-password.html" class="util-link">Forgot password?</a> • 
+      <a href="signup.html" class="util-link">Create account</a>
     </div>
   </div>
 
-  <!-- Firebase SDK -->
+  <!-- ======================= FIREBASE & AUTH LOGIC ======================= -->
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
   
   <script>
-    // Your Firebase config (same as in index.html)
+    // ====== FIREBASE INITIALIZATION ======
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT.firebaseapp.com",
@@ -111,30 +185,77 @@
       messagingSenderId: "YOUR_SENDER_ID",
       appId: "YOUR_APP_ID"
     };
-
+    
     // Initialize Firebase
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
-
-    // Login function
-    function login() {
-      const email = document.getElementById('email').value;
-      const password = document.getElementById('password').value;
+    
+    // ====== DOM ELEMENTS ======
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginBtn = document.getElementById('loginBtn');
+    const errorText = document.getElementById('errorText');
+    
+    // ====== LOGIN FUNCTION ======
+    function loginUser() {
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+      
+      // Validate inputs
+      if (!email || !password) {
+        showError('Please fill in all fields');
+        return;
+      }
+      
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging in...';
       
       auth.signInWithEmailAndPassword(email, password)
-        .then(() => {
-          // Redirect to dashboard after successful login
-          window.location.href = "dashboard.html"; 
+        .then((userCredential) => {
+          // Login successful - redirect to dashboard
+          window.location.href = 'dashboard.html';
         })
         .catch((error) => {
-          alert("Login failed: " + error.message);
+          // Handle errors
+          loginBtn.disabled = false;
+          loginBtn.textContent = 'Login';
+          
+          switch(error.code) {
+            case 'auth/user-not-found':
+              showError('No account found with this email');
+              break;
+            case 'auth/wrong-password':
+              showError('Incorrect password');
+              break;
+            default:
+              showError('Login failed. Please try again.');
+          }
         });
     }
-
-    // Auto-redirect if already logged in
+    
+    // ====== HELPER FUNCTIONS ======
+    function showError(message) {
+      errorText.textContent = message;
+      errorText.style.display = 'block';
+      setTimeout(() => {
+        errorText.style.display = 'none';
+      }, 5000);
+    }
+    
+    // ====== EVENT LISTENERS ======
+    loginBtn.addEventListener('click', loginUser);
+    
+    // Allow login on Enter key
+    passwordInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        loginUser();
+      }
+    });
+    
+    // ====== AUTO-REDIRECT IF LOGGED IN ======
     auth.onAuthStateChanged((user) => {
       if (user) {
-        window.location.href = "dashboard.html";
+        window.location.href = 'dashboard.html';
       }
     });
   </script>
