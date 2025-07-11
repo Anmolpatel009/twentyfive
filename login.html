@@ -216,13 +216,13 @@
       showError('Dashboard page is not ready yet');
       
       // If you want to implement proper redirection later:
-      // fetch('freedashboard.html').then(response => {
-      //   if (response.ok) {
-      //     window.location.href = 'freedashboard.html';
-      //   } else {
-      //     showError('Dashboard is currently unavailable');
-      //   }
-      // });
+       fetch('freedashboard.html').then(response => {
+         if (response.ok) {
+          window.location.href = 'freedashboard.html';
+        } else {
+           showError('Dashboard is currently unavailable');
+        }
+       });
     }
     
     function showError(message) {
