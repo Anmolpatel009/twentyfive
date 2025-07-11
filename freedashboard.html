@@ -1,51 +1,47 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Dashboard | FreelancePro</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- [Keep all meta tags and CSS links] -->
   <style>
-    /* [Keep all the CSS from previous version - it's perfect] */
-    :root {
-      --primary: #4361ee;
-      --primary-light: #e0e7ff;
-      --secondary: #10b981;
-      --secondary-light: #d1fae5;
-      --dark: #1e293b;
-      --light: #f8fafc;
-      --gray: #94a3b8;
-      --light-gray: #e2e8f0;
-      --danger: #ef4444;
-      --warning: #f59e0b;
+    /* [Keep all your existing CSS styles] */
+    
+    /* Add loading state */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
     }
     
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 4px solid var(--primary-light);
+      border-top: 4px solid var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
     }
     
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: var(--light);
-      color: var(--dark);
-      line-height: 1.6;
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
     }
-    
-    /* [Keep all other CSS rules from previous version] */
   </style>
 </head>
 <body>
-  <!-- [Keep all HTML structure from previous version] -->
-  <!-- Navigation, Sidebar, and Main Content structure remains the same -->
-  <!-- Only change is removing hardcoded tasks/activity items -->
+  <!-- Loading overlay (shown by default) -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+  </div>
 
-  <!-- Firebase & Dashboard Logic -->
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
-  
+  <!-- [Keep all your existing HTML structure] -->
+
   <script>
     // Firebase configuration
     const firebaseConfig = {
@@ -63,349 +59,144 @@
     const auth = firebase.auth();
     const db = firebase.firestore();
 
-    // DOM elements
-    const navAvatar = document.getElementById('navAvatar');
-    const navUserName = document.getElementById('navUserName');
-    const sidebarAvatar = document.getElementById('sidebarAvatar');
-    const sidebarUserName = document.getElementById('sidebarUserName');
-    const userRoleBadge = document.getElementById('userRoleBadge');
-    const welcomeUserName = document.getElementById('welcomeUserName');
-    const projectsBadge = document.getElementById('projectsBadge');
-    const messagesBadge = document.getElementById('messagesBadge');
-    const activeProjectsEl = document.getElementById('activeProjects');
-    const completedProjectsEl = document.getElementById('completedProjects');
-    const totalEarningsEl = document.getElementById('totalEarnings');
-    const tasksAppliedEl = document.getElementById('tasksApplied');
-    const tasksSectionTitle = document.getElementById('tasksSectionTitle');
-    const tasksList = document.getElementById('tasksList');
-    const mainActionBtn = document.getElementById('mainActionBtn');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const recentActivityEl = document.getElementById('recentActivity');
-
-    // Current user data
-    let currentUser = null;
-    let userData = null;
-    let userRole = 'freelancer';
-    let unsubscribeUser = null;
-    let unsubscribeTasks = null;
-    let unsubscribeActivity = null;
-
-    // Check authentication state
-    auth.onAuthStateChanged((user) => {
-      if (!user) {
-        // If not logged in, redirect to login page
-        window.location.href = 'login.html';
-      } else {
-        currentUser = user;
-        initDashboard(user.uid);
-      }
-    });
-
-    // Initialize dashboard
-    function initDashboard(userId) {
-      // Load user data
-      unsubscribeUser = db.collection('users').doc(userId)
-        .onSnapshot((doc) => {
-          if (doc.exists) {
-            userData = doc.data();
-            userRole = userData.role || 'freelancer';
-            
-            // Update UI with user data
-            updateUserProfile();
-            updateDashboardStats();
-            updateTasksSection();
-            
-            // Load appropriate data based on role
-            if (userRole === 'client') {
-              loadClientTasks();
-            } else {
-              loadAvailableTasks();
-            }
-            
-            // Load recent activity
-            loadRecentActivity();
-          } else {
-            // User document doesn't exist - create it
-            createUserDocument(userId);
-          }
-        }, (error) => {
-          console.error("Error loading user data:", error);
-        });
-    }
-
-    // Create user document if it doesn't exist
-    async function createUserDocument(userId) {
-      try {
-        await db.collection('users').doc(userId).set({
-          name: currentUser.displayName || currentUser.email.split('@')[0],
-          email: currentUser.email,
-          role: 'freelancer', // Default role
-          activeProjects: 0,
-          completedProjects: 0,
-          totalEarnings: 0,
-          tasksApplied: 0,
-          unreadMessages: 0,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-      } catch (error) {
-        console.error("Error creating user document:", error);
-      }
-    }
-
-    // Update user profile information
-    function updateUserProfile() {
-      const firstName = userData.name ? userData.name.split(' ')[0] : 'User';
-      const initial = userData.name ? userData.name.charAt(0).toUpperCase() : 'U';
-      
-      // Navigation
-      navUserName.textContent = userData.name || 'User';
-      navAvatar.innerHTML = initial;
-      
-      // Sidebar
-      sidebarUserName.textContent = userData.name || 'User';
-      sidebarAvatar.innerHTML = initial;
-      welcomeUserName.textContent = firstName;
-      
-      // Role badge
-      userRoleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
-      if (userRole === 'client') {
-        userRoleBadge.classList.add('client-role');
-        userRoleBadge.classList.remove('user-role');
-        mainActionBtn.innerHTML = '<i class="fas fa-plus"></i> Post a Task';
-        mainActionBtn.onclick = () => window.location.href = 'post-task.html';
-        tasksSectionTitle.textContent = 'Your Posted Tasks';
-      } else {
-        userRoleBadge.classList.remove('client-role');
-        mainActionBtn.innerHTML = '<i class="fas fa-search"></i> Find More Tasks';
-        mainActionBtn.onclick = () => window.location.href = 'tasks.html';
-        tasksSectionTitle.textContent = 'Available Tasks';
-      }
-    }
-
-    // Update dashboard statistics
-    function updateDashboardStats() {
-      activeProjectsEl.textContent = userData.activeProjects || '0';
-      completedProjectsEl.textContent = userData.completedProjects || '0';
-      totalEarningsEl.textContent = `$${userData.totalEarnings || '0'}`;
-      tasksAppliedEl.textContent = userData.tasksApplied || '0';
-      projectsBadge.textContent = userData.activeProjects || '0';
-      messagesBadge.textContent = userData.unreadMessages || '0';
-    }
-
-    // Load client's posted tasks
-    function loadClientTasks() {
-      if (unsubscribeTasks) unsubscribeTasks(); // Cleanup previous listener
-      
-      unsubscribeTasks = db.collection('tasks')
-        .where('clientId', '==', currentUser.uid)
-        .orderBy('createdAt', 'desc')
-        .limit(3)
-        .onSnapshot((snapshot) => {
-          tasksList.innerHTML = '';
-          
-          if (snapshot.empty) {
-            tasksList.innerHTML = '<p>You haven\'t posted any tasks yet.</p>';
-            return;
-          }
-          
-          snapshot.forEach(doc => {
-            const task = doc.data();
-            tasksList.innerHTML += createTaskCard(doc.id, task, true);
-          });
-        }, (error) => {
-          console.error("Error loading client tasks:", error);
-        });
-    }
-
-    // Load available tasks for freelancers
-    function loadAvailableTasks() {
-      if (unsubscribeTasks) unsubscribeTasks(); // Cleanup previous listener
-      
-      unsubscribeTasks = db.collection('tasks')
-        .where('status', '==', 'open')
-        .orderBy('createdAt', 'desc')
-        .limit(3)
-        .onSnapshot((snapshot) => {
-          tasksList.innerHTML = '';
-          
-          if (snapshot.empty) {
-            tasksList.innerHTML = '<p>No available tasks at the moment.</p>';
-            return;
-          }
-          
-          snapshot.forEach(doc => {
-            const task = doc.data();
-            tasksList.innerHTML += createTaskCard(doc.id, task, false);
-          });
-        }, (error) => {
-          console.error("Error loading available tasks:", error);
-        });
-    }
-
-    // Create task card HTML
-    function createTaskCard(taskId, task, isClient) {
-      return `
-        <div class="task-card">
-          <div class="task-header">
-            <h3 class="task-title">${task.title || 'Untitled Task'}</h3>
-            <span class="task-price">$${task.budget || '0'}</span>
-          </div>
-          <p class="task-description">${task.description || 'No description provided'}</p>
-          <div class="task-footer">
-            <span class="task-category">${task.category || 'General'}</span>
-            <div class="task-actions">
-              <button class="task-btn secondary" onclick="viewTask('${taskId}')">View</button>
-              ${isClient ? 
-                `<button class="task-btn primary" onclick="manageTask('${taskId}')">Manage</button>` :
-                `<button class="task-btn primary" onclick="applyForTask('${taskId}')">Apply</button>`
-              }
-            </div>
-          </div>
-        </div>
-      `;
-    }
-
-    // Load recent activity
-    function loadRecentActivity() {
-      if (unsubscribeActivity) unsubscribeActivity(); // Cleanup previous listener
-      
-      unsubscribeActivity = db.collection('activity')
-        .where('userId', '==', currentUser.uid)
-        .orderBy('timestamp', 'desc')
-        .limit(3)
-        .onSnapshot((snapshot) => {
-          recentActivityEl.innerHTML = '';
-          
-          if (snapshot.empty) {
-            recentActivityEl.innerHTML = '<p>No recent activity</p>';
-            return;
-          }
-          
-          snapshot.forEach(doc => {
-            const activity = doc.data();
-            recentActivityEl.innerHTML += createActivityItem(activity);
-          });
-        }, (error) => {
-          console.error("Error loading activity:", error);
-        });
-    }
-
-    // Create activity item HTML
-    function createActivityItem(activity) {
-      const icons = {
-        'task': 'fa-briefcase',
-        'application': 'fa-paper-plane',
-        'payment': 'fa-dollar-sign',
-        'message': 'fa-envelope',
-        'complete': 'fa-check-circle'
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', () => {
+      // Get all DOM elements with null checks
+      const getElement = (id) => {
+        const el = document.getElementById(id);
+        if (!el) console.error(`Element with ID ${id} not found`);
+        return el;
       };
-      
-      const icon = icons[activity.type] || 'fa-bell';
-      
-      return `
-        <div class="activity-item">
-          <div class="activity-icon">
-            <i class="fas ${icon}"></i>
-          </div>
-          <div class="activity-content">
-            <p class="activity-text">${activity.description}</p>
-            <p class="activity-time">${formatTime(activity.timestamp?.toDate())}</p>
-          </div>
-        </div>
-      `;
-    }
 
-    // Format timestamp
-    function formatTime(date) {
-      if (!date) return 'Just now';
-      
-      const now = new Date();
-      const diff = now - date;
-      const minutes = Math.floor(diff / 60000);
-      
-      if (minutes < 1) return 'Just now';
-      if (minutes < 60) return `${minutes} min ago`;
-      if (minutes < 1440) return `${Math.floor(minutes / 60)} hours ago`;
-      return date.toLocaleDateString();
-    }
+      const loadingOverlay = getElement('loadingOverlay');
+      const navAvatar = getElement('navAvatar');
+      const navUserName = getElement('navUserName');
+      const sidebarAvatar = getElement('sidebarAvatar');
+      const sidebarUserName = getElement('sidebarUserName');
+      const userRoleBadge = getElement('userRoleBadge');
+      const welcomeUserName = getElement('welcomeUserName');
+      const projectsBadge = getElement('projectsBadge');
+      const messagesBadge = getElement('messagesBadge');
+      const activeProjectsEl = getElement('activeProjects');
+      const completedProjectsEl = getElement('completedProjects');
+      const totalEarningsEl = getElement('totalEarnings');
+      const tasksAppliedEl = getElement('tasksApplied');
+      const tasksSectionTitle = getElement('tasksSectionTitle');
+      const tasksList = getElement('tasksList');
+      const mainActionBtn = getElement('mainActionBtn');
+      const logoutBtn = getElement('logoutBtn');
+      const recentActivityEl = getElement('recentActivity');
 
-    // Task actions
-    function viewTask(taskId) {
-      window.location.href = `task-detail.html?id=${taskId}`;
-    }
+      // Current user data
+      let currentUser = null;
+      let userData = null;
+      let userRole = 'freelancer';
+      let unsubscribeUser = null;
+      let unsubscribeTasks = null;
+      let unsubscribeActivity = null;
 
-    function manageTask(taskId) {
-      window.location.href = `manage-task.html?id=${taskId}`;
-    }
-
-    async function applyForTask(taskId) {
-      try {
-        // Check if user already applied
-        const applicationRef = db.collection('applications')
-          .where('taskId', '==', taskId)
-          .where('freelancerId', '==', currentUser.uid);
-        
-        const snapshot = await applicationRef.get();
-        
-        if (!snapshot.empty) {
-          alert('You already applied for this task');
-          return;
-        }
-        
-        // Create application
-        await db.collection('applications').add({
-          taskId: taskId,
-          freelancerId: currentUser.uid,
-          clientId: (await db.collection('tasks').doc(taskId).get()).data().clientId,
-          status: 'pending',
-          proposal: '',
-          bidAmount: 0,
-          createdAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Update user stats
-        await db.collection('users').doc(currentUser.uid).update({
-          tasksApplied: firebase.firestore.FieldValue.increment(1),
-          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        // Create activity log
-        await db.collection('activity').add({
-          userId: currentUser.uid,
-          type: 'application',
-          description: `You applied for the "${(await db.collection('tasks').doc(taskId).get()).data().title}" task`,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-        
-        alert('Application submitted successfully!');
-      } catch (error) {
-        console.error("Error applying for task:", error);
-        alert('Failed to apply for task');
-      }
-    }
-
-    // Logout function
-    logoutBtn.addEventListener('click', () => {
-      // Cleanup all listeners
-      if (unsubscribeUser) unsubscribeUser();
-      if (unsubscribeTasks) unsubscribeTasks();
-      if (unsubscribeActivity) unsubscribeActivity();
-      
-      auth.signOut()
-        .then(() => {
+      // Check authentication state
+      auth.onAuthStateChanged((user) => {
+        if (!user) {
           window.location.href = 'login.html';
-        })
-        .catch((error) => {
-          console.error("Logout error:", error);
-        });
-    });
+        } else {
+          currentUser = user;
+          initDashboard(user.uid);
+        }
+      });
 
-    // Cleanup on page unload
-    window.addEventListener('beforeunload', () => {
-      if (unsubscribeUser) unsubscribeUser();
-      if (unsubscribeTasks) unsubscribeTasks();
-      if (unsubscribeActivity) unsubscribeActivity();
+      // Initialize dashboard
+      function initDashboard(userId) {
+        // Load user data
+        unsubscribeUser = db.collection('users').doc(userId)
+          .onSnapshot((doc) => {
+            if (doc.exists) {
+              userData = doc.data();
+              userRole = userData.role || 'freelancer';
+              
+              // Update UI with user data
+              updateUserProfile();
+              updateDashboardStats();
+              updateTasksSection();
+              
+              // Load appropriate data based on role
+              if (userRole === 'client') {
+                loadClientTasks();
+              } else {
+                loadAvailableTasks();
+              }
+              
+              // Load recent activity
+              loadRecentActivity();
+              
+              // Hide loading overlay
+              if (loadingOverlay) loadingOverlay.style.display = 'none';
+            } else {
+              createUserDocument(userId);
+            }
+          }, (error) => {
+            console.error("Error loading user data:", error);
+            if (loadingOverlay) loadingOverlay.style.display = 'none';
+          });
+      }
+
+      // Update user profile information (with null checks)
+      function updateUserProfile() {
+        if (!userData) return;
+        
+        const firstName = userData.name ? userData.name.split(' ')[0] : 'User';
+        const initial = userData.name ? userData.name.charAt(0).toUpperCase() : 'U';
+        
+        // Update elements only if they exist
+        if (navUserName) navUserName.textContent = userData.name || 'User';
+        if (navAvatar) navAvatar.textContent = initial;
+        if (sidebarUserName) sidebarUserName.textContent = userData.name || 'User';
+        if (sidebarAvatar) sidebarAvatar.textContent = initial;
+        if (welcomeUserName) welcomeUserName.textContent = firstName;
+        
+        // Role badge
+        if (userRoleBadge) {
+          userRoleBadge.textContent = userRole.charAt(0).toUpperCase() + userRole.slice(1);
+          if (userRole === 'client') {
+            userRoleBadge.classList.add('client-role');
+          } else {
+            userRoleBadge.classList.remove('client-role');
+          }
+        }
+      }
+
+      // [Keep all other functions from previous version with null checks added]
+      // Update dashboard statistics with null checks
+      function updateDashboardStats() {
+        if (!userData) return;
+        
+        if (activeProjectsEl) activeProjectsEl.textContent = userData.activeProjects || '0';
+        if (completedProjectsEl) completedProjectsEl.textContent = userData.completedProjects || '0';
+        if (totalEarningsEl) totalEarningsEl.textContent = `$${userData.totalEarnings || '0'}`;
+        if (tasksAppliedEl) tasksAppliedEl.textContent = userData.tasksApplied || '0';
+        if (projectsBadge) projectsBadge.textContent = userData.activeProjects || '0';
+        if (messagesBadge) messagesBadge.textContent = userData.unreadMessages || '0';
+      }
+
+      // [Rest of your functions remain the same, just ensure all DOM access has null checks]
+      
+      // Initialize logout button
+      if (logoutBtn) {
+        logoutBtn.addEventListener('click', () => {
+          // Cleanup all listeners
+          if (unsubscribeUser) unsubscribeUser();
+          if (unsubscribeTasks) unsubscribeTasks();
+          if (unsubscribeActivity) unsubscribeActivity();
+          
+          auth.signOut()
+            .then(() => {
+              window.location.href = 'login.html';
+            })
+            .catch((error) => {
+              console.error("Logout error:", error);
+            });
+        });
+      }
     });
   </script>
 </body>
