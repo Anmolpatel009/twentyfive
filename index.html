@@ -202,33 +202,10 @@
       margin: 0 auto 30px;
     }
     
-    .search-container {
-      max-width: 600px;
-      margin: 0 auto;
-      position: relative;
-    }
     
-    .search-container input {
-      width: 100%;
-      padding: 15px 20px;
-      border-radius: 50px;
-      border: none;
-      font-size: 1rem;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
-    }
     
-    .search-container button {
-      position: absolute;
-      right: 5px;
-      top: 5px;
-      background-color: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 50px;
-      padding: 10px 20px;
-      cursor: pointer;
-      min-height: 44px;
-    }
+    
+    
     
     /* Services Section */
     .section {
@@ -844,10 +821,58 @@
     <div class="container">
       <h1>The Best Talent for Your Business</h1>
       <p>Connect with top freelancers for your projects or find exciting work opportunities</p>
-      <div class="search-container">
-        <input type="text" placeholder="What service are you looking for today?">
-        <button><i class="fas fa-search"></i> Search</button>
-      </div>
+     <div class="button-container">
+  <button id="findNearbyBtn" class="custom-btn">
+    <i class="fas fa-map-marker-alt"></i> Find Nearby
+  </button>
+  <button id="showAllBtn" class="custom-btn">
+    <i class="fas fa-users"></i> Show All
+  </button>
+</div>
+
+<style>
+  .button-container {
+    display: flex;
+    gap: 12px; /* Space between buttons */
+    margin: 1rem 0;
+    flex-wrap: wrap; /* Allows stacking on small screens */
+  }
+  
+  .custom-btn {
+    min-width: 150px; /* Reduced width */
+    padding: 8px 16px; /* Smaller padding */
+    border: none;
+    border-radius: 6px;
+    background-color: #4361ee;
+    color: white;
+    font-size: 14px; /* Smaller text */
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: all 0.2s;
+    flex-grow: 1; /* Makes buttons equal width */
+  }
+  
+  .custom-btn:hover {
+    background-color: #3a56d4;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  }
+  
+  @media (max-width: 480px) {
+    .button-container {
+      flex-direction: column; /* Stack vertically on mobile */
+      gap: 8px;
+    }
+    .custom-btn {
+      width: 100%; /* Full width on mobile */
+    }
+  }
+</style>
+     
     </div>
   </section>
 
