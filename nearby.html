@@ -418,48 +418,49 @@ function parseLocationInput(input) {
         }
 
         // Unified search starter
-        function startSearch(mode, location = null) {
-            // Reset UI
-            loadingMessage.style.display = 'flex';
-            errorMessage.style.display = 'none';
-            freelancersContainer.innerHTML = '';
-            
-            if (mode === 'auto') {
-                getLocation()
-                    .then(position => {
-                        const userLocation = {
-                            type: 'coordinates',
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            address: "Your Current Location"
-                        };
-                        return searchFreelancers(userLocation);
-                    })
-                    .catch(error => {
-                        console.error("Location error:", error);
-                        showError(
-                            `We couldn't access your location`,
-                            error.message,
-                            true
-                        );
-                    })
-                    .finally(() => {
-                        loadingMessage.style.display = 'none';
-                    });
-            } else if (location) {
-                searchFreelancers(location)
-                    .catch(error => {
-                        console.error("Search error:", error);
-                        showError(
-                            "An error occurred during search",
-                            error.message
-                        );
-                    })
-                    .finally(() => {
-                        loadingMessage.style.display = 'none';
-                    });
-            }
-        }
+      // Unified search starter
+function startSearch(mode, location = null) {
+    // Reset UI
+    loadingMessage.style.display = 'flex';
+    errorMessage.style.display = 'none';
+    freelancersContainer.innerHTML = '';
+    
+    if (mode === 'auto') {
+        getLocation()
+            .then(position => {
+                const userLocation = {
+                    type: 'coordinates',
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    address: "Your Current Location"
+                };
+                return searchFreelancers(userLocation);
+            })
+            .catch(error => {
+                console.error("Location error:", error);
+                showError(
+                    `We couldn't access your location`,
+                    error.message,
+                    true
+                );
+            })
+            .finally(() => {
+                loadingMessage.style.display = 'none';
+            });
+    } else if (location) {
+        searchFreelancers(location)
+            .catch(error => {
+                console.error("Search error:", error);
+                showError(
+                    "An error occurred during search",
+                    error.message
+                );
+            })
+            .finally(() => {
+                loadingMessage.style.display = 'none';
+            });
+    }
+}
 
         // Improved geolocation function
         function getLocation() {
