@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TalentFlow</title>
+    <title>Find Nearby Freelancers</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body {
@@ -29,6 +29,26 @@
             margin-bottom: 30px;
         }
         
+        .search-options {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .search-option {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            width: 300px;
+        }
+        
+        .search-option h3 {
+            margin-top: 0;
+            color: #4361ee;
+        }
+        
         .btn {
             padding: 12px 24px;
             border-radius: 8px;
@@ -51,6 +71,21 @@
             background-color: #3a56d4;
             transform: translateY(-2px);
             box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-secondary {
+            background-color: #f8f9fa;
+            color: #4361ee;
+            border: 1px solid #4361ee;
+        }
+        
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
         }
         
         .freelancers-container {
@@ -94,6 +129,17 @@
             margin-top: 10px;
         }
         
+        .location-match {
+            display: inline-block;
+            background-color: #4ad66d;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
         .contact-info {
             margin-top: 15px;
             padding-top: 15px;
@@ -128,6 +174,11 @@
         }
         
         @media (max-width: 768px) {
+            .search-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
             .freelancers-container {
                 grid-template-columns: 1fr;
             }
@@ -138,16 +189,26 @@
     <div class="container">
         <h1>Find Nearby Freelancers</h1>
         
-        <div class="search-section">
-            <button id="findFreelancersBtn" class="btn btn-primary">
-                <i class="fas fa-search-location"></i> Find Freelancers Near Me
-            </button>
+        <div class="search-options">
+            <div class="search-option">
+                <h3><i class="fas fa-location-arrow"></i> Use My Location</h3>
+                <button id="findFreelancersBtn" class="btn btn-primary">
+                    <i class="fas fa-search-location"></i> Find Nearby
+                </button>
+            </div>
+            
+            <div class="search-option">
+                <h3><i class="fas fa-map-marker-alt"></i> Enter Location Manually</h3>
+                <input type="text" id="manualLocation" placeholder="Enter city or address">
+                <button id="searchManualBtn" class="btn btn-secondary">
+                    <i class="fas fa-search"></i> Search
+                </button>
+            </div>
         </div>
         
         <div id="freelancersResults">
-            <!-- Results will appear here -->
             <div class="loading" id="loadingMessage" style="display: none;">
-                <i class="fas fa-spinner fa-spin"></i> Finding freelancers near you...
+                <i class="fas fa-spinner fa-spin"></i> Finding freelancers...
             </div>
             <div class="error" id="errorMessage" style="display: none;"></div>
             <div class="freelancers-container" id="freelancersContainer"></div>
@@ -161,25 +222,27 @@
     <script>
         // Firebase configuration (replace with your config)
         const firebaseConfig = {
-      apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
-      authDomain: "twentyfive-68777.firebaseapp.com",
-      projectId: "twentyfive-68777",
-      storageBucket: "twentyfive-68777.firebasestorage.app",
-      messagingSenderId: "81523227450",
-      appId: "1:81523227450:web:df2cf1ac868847a404ee03",
-      measurementId: "G-WPFP3NHVH0"
-    };
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         // DOM elements
         const findFreelancersBtn = document.getElementById('findFreelancersBtn');
+        const searchManualBtn = document.getElementById('searchManualBtn');
+        const manualLocationInput = document.getElementById('manualLocation');
         const loadingMessage = document.getElementById('loadingMessage');
         const errorMessage = document.getElementById('errorMessage');
         const freelancersContainer = document.getElementById('freelancersContainer');
 
-        // Main function to find freelancers
+        // Main function to find freelancers by geolocation
         findFreelancersBtn.addEventListener('click', async () => {
             try {
                 // Show loading state
@@ -191,28 +254,45 @@
                 const position = await getLocation();
                 const userLocation = {
                     lat: position.coords.latitude,
-                    lng: position.coords.longitude
+                    lng: position.coords.longitude,
+                    address: "Your Location"
                 };
                 
-                // Fetch freelancers from Firestore
-                const freelancers = await fetchFreelancers();
-                
-                // Calculate distances and sort
-                const freelancersWithDistance = freelancers.map(freelancer => {
-                    const distance = calculateDistance(
-                        userLocation.lat, 
-                        userLocation.lng,
-                        freelancer.location.lat,
-                        freelancer.location.lng
-                    );
-                    return { ...freelancer, distance };
-                }).sort((a, b) => a.distance - b.distance);
-                
-                // Display results
-                displayFreelancers(freelancersWithDistance);
+                // Fetch and display freelancers
+                await searchFreelancers(userLocation);
                 
             } catch (error) {
                 console.error("Error finding freelancers:", error);
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.style.display = 'block';
+            } finally {
+                loadingMessage.style.display = 'none';
+            }
+        });
+
+        // Manual location search
+        searchManualBtn.addEventListener('click', async () => {
+            try {
+                const locationQuery = manualLocationInput.value.trim();
+                if (!locationQuery) {
+                    throw new Error("Please enter a location");
+                }
+                
+                loadingMessage.style.display = 'block';
+                errorMessage.style.display = 'none';
+                freelancersContainer.innerHTML = '';
+                
+                // For demo purposes - in real app you'd geocode this to get coordinates
+                const manualLocation = {
+                    address: locationQuery,
+                    lat: 0, // These would come from geocoding service
+                    lng: 0  // Using 0 for demo
+                };
+                
+                await searchFreelancers(manualLocation);
+                
+            } catch (error) {
+                console.error("Error with manual search:", error);
                 errorMessage.textContent = `Error: ${error.message}`;
                 errorMessage.style.display = 'block';
             } finally {
@@ -244,11 +324,73 @@
             return R * c; // Distance in km
         }
 
+        // Check if two locations have similar words
+        function hasSimilarWords(loc1, loc2) {
+            if (!loc1 || !loc2) return false;
+            
+            const words1 = loc1.toLowerCase().split(/\W+/);
+            const words2 = loc2.toLowerCase().split(/\W+/);
+            
+            return words1.some(word => 
+                word.length > 3 && // Only consider words longer than 3 chars
+                words2.includes(word)
+            );
+        }
+
+        // Main search function
+        async function searchFreelancers(userLocation) {
+            const freelancers = await fetchFreelancers();
+            
+            // Process freelancers with both distance and location similarity
+            const processedFreelancers = freelancers.map(freelancer => {
+                let distance = null;
+                let isSimilarLocation = false;
+                
+                if (freelancer.location && userLocation.lat !== 0) {
+                    distance = calculateDistance(
+                        userLocation.lat, 
+                        userLocation.lng,
+                        freelancer.location.lat,
+                        freelancer.location.lng
+                    );
+                }
+                
+                if (freelancer.address && userLocation.address) {
+                    isSimilarLocation = hasSimilarWords(
+                        freelancer.address,
+                        userLocation.address
+                    );
+                }
+                
+                return { 
+                    ...freelancer, 
+                    distance,
+                    isSimilarLocation
+                };
+            });
+            
+            // Sort by: 1) Distance (if available), 2) Location similarity
+            processedFreelancers.sort((a, b) => {
+                // Both have distance - sort by distance
+                if (a.distance !== null && b.distance !== null) {
+                    return a.distance - b.distance;
+                }
+                // One has distance - put it first
+                if (a.distance !== null) return -1;
+                if (b.distance !== null) return 1;
+                // Neither has distance - sort by location similarity
+                if (a.isSimilarLocation && !b.isSimilarLocation) return -1;
+                if (!a.isSimilarLocation && b.isSimilarLocation) return 1;
+                return 0;
+            });
+            
+            displayFreelancers(processedFreelancers, userLocation.address);
+        }
+
         // Fetch freelancers from Firestore
         async function fetchFreelancers() {
             const snapshot = await db.collection('users')
                 .where('role', '==', 'freelancer')
-                .where('location', '!=', null)
                 .get();
                 
             return snapshot.docs.map(doc => ({
@@ -258,11 +400,11 @@
         }
 
         // Display freelancers in card format
-        function displayFreelancers(freelancers) {
+        function displayFreelancers(freelancers, searchLocation = "") {
             if (freelancers.length === 0) {
                 freelancersContainer.innerHTML = `
                     <div class="error">
-                        No freelancers found near your location.
+                        No freelancers found matching your search.
                     </div>
                 `;
                 return;
@@ -274,15 +416,25 @@
                     <p><i class="fas fa-briefcase"></i> ${freelancer.profession || 'Not specified'}</p>
                     <p><i class="fas fa-star"></i> ${freelancer.rating || 'No ratings yet'}</p>
                     
+                    ${freelancer.address ? `<p><i class="fas fa-map-marker-alt"></i> ${freelancer.address}</p>` : ''}
+                    
                     <div class="skills">
                         ${(freelancer.skills || []).map(skill => `
                             <span class="skill-tag">${skill}</span>
                         `).join('')}
                     </div>
                     
-                    <span class="distance-badge">
-                        ${freelancer.distance.toFixed(1)} km away
-                    </span>
+                    ${freelancer.distance !== null ? `
+                        <span class="distance-badge">
+                            ${freelancer.distance.toFixed(1)} km away
+                        </span>
+                    ` : ''}
+                    
+                    ${freelancer.isSimilarLocation ? `
+                        <span class="location-match">
+                            <i class="fas fa-check-circle"></i> Similar location
+                        </span>
+                    ` : ''}
                     
                     <div class="contact-info">
                         <p><i class="fas fa-envelope"></i> ${freelancer.email || 'Not provided'}</p>
