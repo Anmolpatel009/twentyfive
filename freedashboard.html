@@ -1,11 +1,340 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <!-- [Keep all meta tags and CSS links] -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>25Days - Freelance Dashboard</title>
+  <!-- Firebase SDK -->
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
+  <!-- Font Awesome -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
-    /* [Keep all your existing CSS styles] */
-    
-    /* Add loading state */
+    :root {
+      --primary: #4361ee;
+      --primary-light: #4895ef;
+      --secondary: #3f37c9;
+      --dark: #1b263b;
+      --light: #f8f9fa;
+      --danger: #f72585;
+      --success: #4cc9f0;
+      --warning: #f8961e;
+      --gray: #adb5bd;
+      --gray-dark: #495057;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f5f7fa;
+      color: var(--dark);
+    }
+
+    /* Layout */
+    .dashboard {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: white;
+      box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+      padding: 1.5rem;
+      position: fixed;
+      height: 100vh;
+      width: 240px;
+    }
+
+    .sidebar-header {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .user-profile {
+      display: flex;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 0.75rem;
+      font-weight: bold;
+    }
+
+    .user-info h3 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .user-role {
+      font-size: 0.75rem;
+      background-color: var(--primary-light);
+      color: white;
+      padding: 0.25rem 0.5rem;
+      border-radius: 20px;
+      display: inline-block;
+    }
+
+    .user-role.client-role {
+      background-color: var(--warning);
+    }
+
+    .nav-menu {
+      list-style: none;
+    }
+
+    .nav-item {
+      margin-bottom: 0.5rem;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      padding: 0.75rem;
+      color: var(--gray-dark);
+      text-decoration: none;
+      border-radius: 8px;
+      transition: all 0.2s;
+    }
+
+    .nav-link:hover, .nav-link.active {
+      background-color: var(--primary-light);
+      color: white;
+    }
+
+    .nav-link i {
+      margin-right: 0.75rem;
+      width: 20px;
+      text-align: center;
+    }
+
+    /* Main Content */
+    .main-content {
+      grid-column: 2;
+      padding: 2rem;
+      margin-left: 240px;
+    }
+
+    /* Header */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 2rem;
+    }
+
+    .header-left h1 {
+      font-size: 1.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .header-left p {
+      color: var(--gray);
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+    }
+
+    .header-avatar {
+      width: 40px;
+      height: 40px;
+      background-color: var(--primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-left: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1.5rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    }
+
+    .stat-card h3 {
+      font-size: 0.875rem;
+      color: var(--gray);
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-card p {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .stat-card.earnings p {
+      color: var(--success);
+    }
+
+    /* Tasks Section */
+    .section {
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      margin-bottom: 2rem;
+    }
+
+    .section-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .section-title {
+      font-size: 1.25rem;
+      font-weight: 600;
+    }
+
+    .btn {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s;
+    }
+
+    .btn:hover {
+      background-color: var(--secondary);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid var(--primary);
+      color: var(--primary);
+    }
+
+    .btn-outline:hover {
+      background-color: var(--primary);
+      color: white;
+    }
+
+    /* Tasks List */
+    .tasks-list {
+      list-style: none;
+    }
+
+    .task-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .task-info h4 {
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .task-info p {
+      color: var(--gray);
+      font-size: 0.875rem;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      margin-top: 0.5rem;
+    }
+
+    .task-meta span {
+      display: flex;
+      align-items: center;
+      margin-right: 1rem;
+      font-size: 0.75rem;
+      color: var(--gray-dark);
+    }
+
+    .task-meta i {
+      margin-right: 0.25rem;
+    }
+
+    .task-price {
+      font-weight: 700;
+      color: var(--success);
+    }
+
+    /* Recent Activity */
+    .activity-item {
+      display: flex;
+      padding: 1rem 0;
+      border-bottom: 1px solid #eee;
+    }
+
+    .activity-avatar {
+      width: 36px;
+      height: 36px;
+      background-color: var(--primary-light);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-right: 1rem;
+      font-weight: bold;
+      font-size: 0.875rem;
+    }
+
+    .activity-content h4 {
+      font-size: 0.875rem;
+      margin-bottom: 0.25rem;
+    }
+
+    .activity-content p {
+      font-size: 0.75rem;
+      color: var(--gray);
+    }
+
+    .activity-time {
+      font-size: 0.75rem;
+      color: var(--gray);
+      margin-top: 0.25rem;
+    }
+
+    /* Loading overlay */
     .loading-overlay {
       position: fixed;
       top: 0;
@@ -32,6 +361,33 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .dashboard {
+        grid-template-columns: 1fr;
+      }
+      
+      .sidebar {
+        position: static;
+        width: 100%;
+        height: auto;
+      }
+      
+      .main-content {
+        margin-left: 0;
+      }
+      
+      .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+
+    @media (max-width: 640px) {
+      .stats-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -40,7 +396,128 @@
     <div class="spinner"></div>
   </div>
 
-  <!-- [Keep all your existing HTML structure] -->
+  <div class="dashboard">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">25Days</div>
+      </div>
+      
+      <div class="user-profile">
+        <div class="avatar" id="sidebarAvatar">U</div>
+        <div class="user-info">
+          <h3 id="sidebarUserName">User</h3>
+          <span class="user-role" id="userRoleBadge">Freelancer</span>
+        </div>
+      </div>
+      
+      <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="#" class="nav-link active">
+            <i class="fas fa-home"></i>
+            Dashboard
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-briefcase"></i>
+            Projects <span class="badge" id="projectsBadge">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-envelope"></i>
+            Messages <span class="badge" id="messagesBadge">0</span>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-calendar"></i>
+            Calendar
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link">
+            <i class="fas fa-cog"></i>
+            Settings
+          </a>
+        </li>
+        <li class="nav-item">
+          <a href="#" class="nav-link" id="logoutBtn">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </a>
+        </li>
+      </ul>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="main-content">
+      <header class="header">
+        <div class="header-left">
+          <h1>Welcome back, <span id="welcomeUserName">User</span>!</h1>
+          <p>Here's what's happening with your projects today</p>
+        </div>
+        <div class="header-right">
+          <div class="avatar" id="navAvatar">U</div>
+        </div>
+      </header>
+      
+      <!-- Stats Grid -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Active Projects</h3>
+          <p id="activeProjects">0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Completed Projects</h3>
+          <p id="completedProjects">0</p>
+        </div>
+        <div class="stat-card earnings">
+          <h3>Total Earnings</h3>
+          <p id="totalEarnings">$0</p>
+        </div>
+        <div class="stat-card">
+          <h3>Tasks Applied</h3>
+          <p id="tasksApplied">0</p>
+        </div>
+      </div>
+      
+      <!-- Tasks Section -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title" id="tasksSectionTitle">Available Tasks</h2>
+          <button class="btn" id="mainActionBtn">Post New Task</button>
+        </div>
+        
+        <ul class="tasks-list" id="tasksList">
+          <!-- Tasks will be dynamically inserted here -->
+          <li class="task-item">
+            <div class="task-info">
+              <h4>Loading tasks...</h4>
+            </div>
+          </li>
+        </ul>
+      </section>
+      
+      <!-- Recent Activity -->
+      <section class="section">
+        <div class="section-header">
+          <h2 class="section-title">Recent Activity</h2>
+        </div>
+        
+        <div class="activity-list" id="recentActivity">
+          <!-- Activity will be dynamically inserted here -->
+          <div class="activity-item">
+            <div class="activity-avatar">U</div>
+            <div class="activity-content">
+              <h4>Loading activity...</h4>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
 
   <script>
     // Firebase configuration
@@ -48,7 +525,7 @@
       apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
       authDomain: "twentyfive-68777.firebaseapp.com",
       projectId: "twentyfive-68777",
-      storageBucket: "twentyfive-68777.firebasestorage.app",
+      storageBucket: "twentyfive-68777.appspot.com",
       messagingSenderId: "81523227450",
       appId: "1:81523227450:web:df2cf1ac868847a404ee03",
       measurementId: "G-WPFP3NHVH0"
@@ -140,6 +617,23 @@
           });
       }
 
+      // Create user document if doesn't exist
+      function createUserDocument(userId) {
+        db.collection('users').doc(userId).set({
+          name: currentUser.displayName || "New User",
+          email: currentUser.email,
+          role: 'freelancer',
+          activeProjects: 0,
+          completedProjects: 0,
+          totalEarnings: 0,
+          tasksApplied: 0,
+          unreadMessages: 0,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        })
+        .then(() => console.log("New user document created"))
+        .catch(error => console.error("Error creating user:", error));
+      }
+
       // Update user profile information (with null checks)
       function updateUserProfile() {
         if (!userData) return;
@@ -163,9 +657,18 @@
             userRoleBadge.classList.remove('client-role');
           }
         }
+        
+        // Update main action button based on role
+        if (mainActionBtn) {
+          mainActionBtn.textContent = userRole === 'client' ? 'Post New Task' : 'Browse Tasks';
+        }
+        
+        // Update tasks section title
+        if (tasksSectionTitle) {
+          tasksSectionTitle.textContent = userRole === 'client' ? 'Your Posted Tasks' : 'Available Tasks';
+        }
       }
 
-      // [Keep all other functions from previous version with null checks added]
       // Update dashboard statistics with null checks
       function updateDashboardStats() {
         if (!userData) return;
@@ -178,8 +681,174 @@
         if (messagesBadge) messagesBadge.textContent = userData.unreadMessages || '0';
       }
 
-      // [Rest of your functions remain the same, just ensure all DOM access has null checks]
-      
+      // Load available tasks for freelancers
+      function loadAvailableTasks() {
+        if (unsubscribeTasks) unsubscribeTasks();
+        
+        unsubscribeTasks = db.collection('tasks')
+          .where('status', '==', 'open')
+          .orderBy('createdAt', 'desc')
+          .limit(5)
+          .onSnapshot((snapshot) => {
+            if (!tasksList) return;
+            
+            tasksList.innerHTML = '';
+            
+            if (snapshot.empty) {
+              tasksList.innerHTML = '<li class="task-item"><div class="task-info"><h4>No available tasks found</h4></div></li>';
+              return;
+            }
+            
+            snapshot.forEach(doc => {
+              const task = doc.data();
+              const taskItem = document.createElement('li');
+              taskItem.className = 'task-item';
+              taskItem.innerHTML = `
+                <div class="task-info">
+                  <h4>${task.title}</h4>
+                  <p>${task.description || 'No description provided'}</p>
+                  <div class="task-meta">
+                    <span><i class="fas fa-map-marker-alt"></i> ${task.location || 'Remote'}</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(task.createdAt)}</span>
+                  </div>
+                </div>
+                <div class="task-price">$${task.budget || '0'}</div>
+              `;
+              tasksList.appendChild(taskItem);
+            });
+          }, error => {
+            console.error("Error loading tasks:", error);
+          });
+      }
+
+      // Load client's posted tasks
+      function loadClientTasks() {
+        if (unsubscribeTasks) unsubscribeTasks();
+        
+        unsubscribeTasks = db.collection('tasks')
+          .where('clientId', '==', currentUser.uid)
+          .orderBy('createdAt', 'desc')
+          .limit(5)
+          .onSnapshot((snapshot) => {
+            if (!tasksList) return;
+            
+            tasksList.innerHTML = '';
+            
+            if (snapshot.empty) {
+              tasksList.innerHTML = '<li class="task-item"><div class="task-info"><h4>You haven\'t posted any tasks yet</h4></div></li>';
+              return;
+            }
+            
+            snapshot.forEach(doc => {
+              const task = doc.data();
+              const taskItem = document.createElement('li');
+              taskItem.className = 'task-item';
+              taskItem.innerHTML = `
+                <div class="task-info">
+                  <h4>${task.title}</h4>
+                  <p>${task.description || 'No description provided'}</p>
+                  <div class="task-meta">
+                    <span><i class="fas fa-user"></i> ${task.applications || 0} applications</span>
+                    <span><i class="fas fa-clock"></i> ${formatDate(task.createdAt)}</span>
+                    <span class="status-badge ${task.status}">${task.status}</span>
+                  </div>
+                </div>
+                <div class="task-actions">
+                  <button class="btn btn-outline btn-sm">View</button>
+                </div>
+              `;
+              tasksList.appendChild(taskItem);
+            });
+          }, error => {
+            console.error("Error loading client tasks:", error);
+          });
+      }
+
+      // Load recent activity
+      function loadRecentActivity() {
+        if (unsubscribeActivity) unsubscribeActivity();
+        
+        unsubscribeActivity = db.collection('activity')
+          .where('userId', '==', currentUser.uid)
+          .orderBy('timestamp', 'desc')
+          .limit(5)
+          .onSnapshot((snapshot) => {
+            if (!recentActivityEl) return;
+            
+            recentActivityEl.innerHTML = '';
+            
+            if (snapshot.empty) {
+              recentActivityEl.innerHTML = '<div class="activity-item"><div class="activity-content"><h4>No recent activity</h4></div></div>';
+              return;
+            }
+            
+            snapshot.forEach(doc => {
+              const activity = doc.data();
+              const activityItem = document.createElement('div');
+              activityItem.className = 'activity-item';
+              
+              const initial = activity.actionBy ? activity.actionBy.charAt(0).toUpperCase() : 'S';
+              
+              activityItem.innerHTML = `
+                <div class="activity-avatar">${initial}</div>
+                <div class="activity-content">
+                  <h4>${activity.message}</h4>
+                  <p>${activity.details || ''}</p>
+                  <div class="activity-time">${formatTime(activity.timestamp)}</div>
+                </div>
+              `;
+              recentActivityEl.appendChild(activityItem);
+            });
+          }, error => {
+            console.error("Error loading activity:", error);
+          });
+      }
+
+      // Format Firestore timestamp to readable date
+      function formatDate(timestamp) {
+        if (!timestamp) return 'N/A';
+        const date = timestamp.toDate();
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      }
+
+      // Format Firestore timestamp to relative time
+      function formatTime(timestamp) {
+        if (!timestamp) return 'just now';
+        const date = timestamp.toDate();
+        const now = new Date();
+        const diff = now - date;
+        
+        const minute = 60 * 1000;
+        const hour = 60 * minute;
+        const day = 24 * hour;
+        
+        if (diff < minute) return 'just now';
+        if (diff < hour) return `${Math.floor(diff / minute)} minutes ago`;
+        if (diff < day) return `${Math.floor(diff / hour)} hours ago`;
+        return `${Math.floor(diff / day)} days ago`;
+      }
+
+      // Update tasks section UI based on role
+      function updateTasksSection() {
+        if (!userRole || !tasksSectionTitle || !mainActionBtn) return;
+        
+        if (userRole === 'client') {
+          tasksSectionTitle.textContent = 'Your Posted Tasks';
+          mainActionBtn.textContent = 'Post New Task';
+          mainActionBtn.onclick = () => {
+            // Implement task posting functionality
+            alert('Redirect to task posting form');
+          };
+        } else {
+          tasksSectionTitle.textContent = 'Available Tasks';
+          mainActionBtn.textContent = 'Browse Tasks';
+          mainActionBtn.onclick = () => {
+            // Implement task browsing functionality
+            alert('Redirect to tasks browser');
+          };
+        }
+      }
+
       // Initialize logout button
       if (logoutBtn) {
         logoutBtn.addEventListener('click', () => {
