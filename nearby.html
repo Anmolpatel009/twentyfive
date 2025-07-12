@@ -371,28 +371,40 @@
         });
 
         // Parse location input (coordinates or text)
-        function parseLocationInput(input) {
-            input = input.trim();
-            
-            // Check if input is coordinates (e.g., "37.7749, -122.4194")
-            const coordPattern = /^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?)\s*,\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?$/;
-            if (coordPattern.test(input)) {
-                const [latStr, lngStr] = input.split(/\s*,\s*/);
-                const lat = parseFloat(latStr);
-                const lng = parseFloat(lngStr);
-                
-                if (isNaN(lat) throw new Error("Invalid latitude value");
-                if (isNaN(lng)) throw new Error("Invalid longitude value");
-                if (lat < -90 || lat > 90) throw new Error("Latitude must be between -90 and 90");
-                if (lng < -180 || lng > 180) throw new Error("Longitude must be between -180 and 180");
-                
-                return {
-                    type: 'coordinates',
-                    lat,
-                    lng,
-                    address: `Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`
-                };
-            }
+       // Corrected function to parse location input
+function parseLocationInput(input) {
+    input = input.trim();
+    
+    // Check if input is coordinates (e.g., "37.7749, -122.4194")
+    const coordPattern = /^[-+]?([1-8]?\d(\.\d+)?|90(\.0+)?)\s*,\s*[-+]?(180(\.0+)?|((1[0-7]\d)|([1-9]?\d))(\.\d+)?)$/;
+    if (coordPattern.test(input)) {
+        const [latStr, lngStr] = input.split(/\s*,\s*/);
+        const lat = parseFloat(latStr);
+        const lng = parseFloat(lngStr);
+        
+        if (isNaN(lat)) throw new Error("Invalid latitude value");
+        if (isNaN(lng)) throw new Error("Invalid longitude value");
+        if (lat < -90 || lat > 90) throw new Error("Latitude must be between -90 and 90");
+        if (lng < -180 || lng > 180) throw new Error("Longitude must be between -180 and 180");
+        
+        return {
+            type: 'coordinates',
+            lat,
+            lng,
+            address: `Coordinates (${lat.toFixed(4)}, ${lng.toFixed(4)})`
+        };
+    }
+    
+    // Otherwise treat as text location (city, postal code, etc.)
+    if (input.length < 2) throw new Error("Location query too short");
+    
+    return {
+        type: 'text',
+        address: input,
+        lat: 0,
+        lng: 0
+    };
+}
             
             // Otherwise treat as text location (city, postal code, etc.)
             if (input.length < 2) throw new Error("Location query too short");
