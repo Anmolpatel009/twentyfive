@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LocalFreelance Hub - Find Professionals</title>
+    <title>Freelancer Directory | Local Task Marketplace</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <style>
         * {
             margin: 0;
@@ -45,7 +46,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 20px;
+            padding: 25px 30px;
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: white;
             border-radius: 15px;
@@ -614,7 +615,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
             authDomain: "twentyfive-68777.firebaseapp.com",
-            databaseURL: "https://twentyfive-68777-default-rtdb.firebaseio.com",
             projectId: "twentyfive-68777",
             storageBucket: "twentyfive-68777.appspot.com",
             messagingSenderId: "81523227450",
@@ -624,7 +624,7 @@
         
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        const db = firebase.firestore();
         
         // Get DOM elements
         const showAllBtn = document.getElementById('showAllBtn');
@@ -646,7 +646,7 @@
             const nameParts = name.trim().split(/\s+/);
             if (nameParts.length === 0) return 'NA';
             if (nameParts.length === 1) return nameParts[0].charAt(0).toUpperCase();
-            return (nameParts[0].charAt(0) + (nameParts[1].charAt(0)).toUpperCase();
+            return (nameParts[0].charAt(0) + nameParts[nameParts.length - 1].charAt(0)).toUpperCase();
         }
         
         // Format experience text
@@ -731,7 +731,7 @@
             });
         }
         
-        // Fetch all freelancers from Firebase
+        // Fetch all freelancers from Firebase Firestore
         function fetchFreelancers() {
             freelancersContainer.innerHTML = `
                 <div class="loading">
@@ -740,28 +740,40 @@
                 </div>
             `;
             
-            database.ref('users').once('value')
-                .then(snapshot => {
-                    allFreelancers = [];
-                    uniqueLocations.clear();
-                    uniqueSkills.clear();
+            // Clear previous data
+            allFreelancers = [];
+            uniqueLocations.clear();
+            uniqueSkills.clear();
+            
+            // Query Firestore for freelancers
+            db.collection("users")
+                .where("userType", "==", "freelancer")
+                .get()
+                .then((querySnapshot) => {
+                    if (querySnapshot.empty) {
+                        freelancersContainer.innerHTML = `
+                            <div class="empty-state">
+                                <i class="fas fa-user-times"></i>
+                                <p>No freelancers found in the database.</p>
+                            </div>
+                        `;
+                        return;
+                    }
                     
-                    snapshot.forEach(childSnapshot => {
-                        const user = childSnapshot.val();
-                        if (user.userType === 'freelancer') {
-                            allFreelancers.push(user);
-                            
-                            // Collect unique locations
-                            if (user.address) {
-                                uniqueLocations.add(user.address);
-                            }
-                            
-                            // Collect unique skills
-                            if (user.freelancerProfile?.skills) {
-                                user.freelancerProfile.skills.forEach(skill => {
-                                    uniqueSkills.add(skill);
-                                });
-                            }
+                    querySnapshot.forEach((doc) => {
+                        const userData = doc.data();
+                        allFreelancers.push(userData);
+                        
+                        // Collect unique locations
+                        if (userData.address) {
+                            uniqueLocations.add(userData.address);
+                        }
+                        
+                        // Collect unique skills
+                        if (userData.freelancerProfile?.skills) {
+                            userData.freelancerProfile.skills.forEach(skill => {
+                                uniqueSkills.add(skill);
+                            });
                         }
                     });
                     
@@ -773,14 +785,14 @@
                     // Display all freelancers
                     displayFreelancers(allFreelancers);
                 })
-                .catch(error => {
+                .catch((error) => {
+                    console.error("Error fetching freelancers:", error);
                     freelancersContainer.innerHTML = `
                         <div class="empty-state">
                             <i class="fas fa-exclamation-triangle"></i>
                             <p>Error loading freelancers: ${error.message}</p>
                         </div>
                     `;
-                    console.error("Error fetching freelancers:", error);
                 });
         }
         
@@ -790,14 +802,30 @@
             const locationTerm = locationSearch.value.toLowerCase();
             
             const filtered = allFreelancers.filter(freelancer => {
-                const matchesSkill = skillTerm ? 
-                    (freelancer.freelancerProfile?.skills?.some(skill => 
-                        skill.toLowerCase().includes(skillTerm)) ||
-                    (freelancer.freelancerProfile?.services?.toLowerCase().includes(skillTerm))
-                ) : true;
+                // Check if the freelancer has the required profile data
+                if (!freelancer.freelancerProfile) return false;
                 
+                // Check skills match
+                let matchesSkill = false;
+                if (skillTerm) {
+                    // Check services field
+                    if (freelancer.freelancerProfile.services && 
+                        freelancer.freelancerProfile.services.toLowerCase().includes(skillTerm)) {
+                        matchesSkill = true;
+                    }
+                    // Check skills array
+                    else if (freelancer.freelancerProfile.skills && 
+                             freelancer.freelancerProfile.skills.some(skill => 
+                                 skill.toLowerCase().includes(skillTerm))) {
+                        matchesSkill = true;
+                    }
+                } else {
+                    matchesSkill = true;
+                }
+                
+                // Check location match
                 const matchesLocation = locationTerm ? 
-                    (freelancer.address?.toLowerCase().includes(locationTerm)) : true;
+                    (freelancer.address && freelancer.address.toLowerCase().includes(locationTerm)) : true;
                 
                 return matchesSkill && matchesLocation;
             });
@@ -820,4 +848,3 @@
     </script>
 </body>
 </html>
-
