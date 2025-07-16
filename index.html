@@ -1315,6 +1315,11 @@
               </button>
               <button class="contact-btn" onclick="contactPoster('${task.posterPhone}', 'phone')">
                 <i class="fas fa-phone"></i> Call
+                <button class="btn-interested" data-task-id="{{task.id}}">👍 Interested</button>
+  <button class="btn-not-interested" data-task-id="{{task.id}}">✖ Not Interested</button>
+  <button class="btn-view-interested" data-task-id="{{task.id}}">
+    👥 View Interested (<span class="interest-count">0</span>)
+  </button>
               </button>
             </div>
           </div>
