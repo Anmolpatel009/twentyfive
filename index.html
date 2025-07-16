@@ -146,6 +146,86 @@
       font-size: 24px;
       color: var(--dark);
     }
+  .task-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+    flex-wrap: wrap;
+  }
+  
+  .action-btn {
+    display: flex;
+    align-items: center;
+    padding: 8px 15px;
+    border-radius: 6px;
+    border: none;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-size: 14px;
+  }
+  
+  .action-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .action-btn:active {
+    transform: translateY(0);
+  }
+  
+  .emoji {
+    margin-right: 6px;
+    font-size: 16px;
+  }
+  
+  /* Interested Button */
+  .interested-btn {
+    background-color: #4CAF50;
+    color: white;
+  }
+  
+  .interested-btn:hover {
+    background-color: #3e8e41;
+  }
+  
+  /* Not Interested Button */
+  .not-interested-btn {
+    background-color: #f44336;
+    color: white;
+  }
+  
+  .not-interested-btn:hover {
+    background-color: #d32f2f;
+  }
+  
+  /* View Interested Button */
+  .view-interested-btn {
+    background-color: #2196F3;
+    color: white;
+  }
+  
+  .view-interested-btn:hover {
+    background-color: #0b7dda;
+  }
+  
+  /* Counter Style */
+  .count {
+    font-weight: bold;
+    margin-left: 2px;
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 500px) {
+    .task-actions {
+      flex-direction: column;
+    }
+    
+    .action-btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
 
     /* Mobile styles */
     @media (max-width: 768px) {
