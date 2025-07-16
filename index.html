@@ -1420,57 +1420,6 @@
         taskList.appendChild(taskCard);
       });
     });
-
-
-
-
-
-    const db = firebase.firestore();
-  const auth = firebase.auth();
-
-  document.getElementById('interestedBtn').addEventListener('click', async function() {
-    // 1. Check if user is logged in
-    const user = auth.currentUser;
-    if (!user) {
-      window.location.href = '/signup.html';
-      return;
-    }
-
-    // 2. Check if user exists in freelancers collection
-    try {
-      const userDoc = await db.collection('freelancers').doc(user.uid).get();
-      
-      if (!userDoc.exists) {
-        // User not registered as freelancer
-        if (confirm('You need to register as a freelancer first. Go to signup page?')) {
-          window.location.href = '/freelancer-signup.html';
-        }
-        return;
-      }
-
-      // 3. Get task ID (replace with your actual task ID source)
-      const taskId = 'YOUR_TASK_ID'; // You should get this from your task card
-      
-      // 4. Add to interested collection
-      await db.collection('tasks').doc(taskId)
-        .collection('interested').doc(user.uid)
-        .set({
-          name: userDoc.data().name,
-          email: userDoc.data().email,
-          skills: userDoc.data().skills || [],
-          timestamp: firebase.firestore.FieldValue.serverTimestamp()
-        });
-
-      alert('Your interest has been recorded!');
-      this.disabled = true;
-      this.textContent = '✅ Interested!';
-
-    } catch (error) {
-      console.error('Error:', error);
-      alert('An error occurred. Please try again.');
-    }
-  });
-   }
     // Initialize the page
     window.onload = function() {
       loadTasks();
