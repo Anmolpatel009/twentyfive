@@ -1366,9 +1366,143 @@
         taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
         return;
       }
+      ///////////////////////////////
+      // Initialize Firebase
+const firebaseConfig = { 
+  apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
+  authDomain: "twentyfive-68777.firebaseapp.com",
+  projectId: "twentyfive-68777",
+  storageBucket: "twentyfive-68777.firebasestorage.app",
+  messagingSenderId: "81523227450",
+  appId: "1:81523227450:web:df2cf1ac868847a404ee03",
+  measurementId: "G-WPFP3NHVH0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Elements
+const modal = document.getElementById('interest-modal');
+const userInput = document.getElementById('user-identifier');
+const confirmBtn = document.getElementById('confirm-identity');
+const errorMsg = document.getElementById('error-msg');
+let currentTaskId = null;
+
+function initializeInterestButtons() {
+  // Get all task cards
+  const taskCards = document.querySelectorAll('.task-card');
+
+  // Attach event listeners to each task card
+  taskCards.forEach(card => {
+    const taskId = card.dataset.taskId;
+    
+    const interestedBtn = card.querySelector('.interested-btn');
+    const notInterestedBtn = card.querySelector('.not-interested-btn');
+    
+    // Handle Interested button click
+    interestedBtn.addEventListener('click', function() {
+      currentTaskId = taskId;
+      modal.style.display = 'block';
+      userInput.value = '';
+      errorMsg.style.display = 'none';
+    });
+
+    // Handle Not Interested button
+    notInterestedBtn.addEventListener('click', function() {
+      this.textContent = '❌ Not Interested';
+      this.disabled = true;
+      alert('Your disinterest has been noted.');
+    });
+  });
+}
+
+// Handle identity confirmation
+confirmBtn.addEventListener('click', async () => {
+  const identifier = userInput.value.trim();
+  if (!identifier) return;
+  
+  try {
+    // Search for user by username or email
+    const usersRef = db.collection('freelancers');
+    const snapshot = await usersRef
+      .where('username', '==', identifier)
+      .get();
+    
+    // If not found by username, try email
+    let freelancerDoc = null;
+    let freelancerData = null;
+    
+    if (snapshot.empty) {
+      const emailSnapshot = await usersRef
+        .where('email', '==', identifier)
+        .get();
+      if (!emailSnapshot.empty) {
+        freelancerDoc = emailSnapshot.docs[0];
+        freelancerData = freelancerDoc.data();
+      }
+    } else {
+      freelancerDoc = snapshot.docs[0];
+      freelancerData = freelancerDoc.data();
+    }
+    
+    if (!freelancerData) {
+      errorMsg.style.display = 'block';
+      return;
+    }
+    
+    // Check for required fields
+    if (!freelancerData.email || !freelancerData.skills || !freelancerData.contact) {
+      alert('User profile incomplete. Redirecting to profile completion.');
+      window.location.href = 'complete-profile.html';
+      return;
+    }
+    
+    // Add to interested collection with task ID
+    await db.collection('tasks').doc(currentTaskId)
+      .collection('interested').doc(freelancerDoc.id)
+      .set({
+        name: freelancerData.name || '',
+        email: freelancerData.email,
+        skills: freelancerData.skills,
+        contact: freelancerData.contact,
+        taskId: currentTaskId,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    
+    // Close modal and show success
+    modal.style.display = 'none';
+    alert('Your interest has been recorded!');
+    
+    // Update UI for all buttons with this task ID
+    document.querySelectorAll(`.task-card[data-task-id="${currentTaskId}"] .interested-btn`)
+      .forEach(btn => {
+        btn.textContent = '✅ Interest Recorded!';
+        btn.disabled = true;
+      });
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('An error occurred. Please try again.');
+  }
+});
+
+// Close modal if clicked outside
+window.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
+// Initialize when page loads
+document.addEventListener('DOMContentLoaded', () => {
+  // First render your tasks, then:
+  initializeInterestButtons();
+});
+
+      
      
 
-
+///////////////////////////////////
       querySnapshot.forEach((doc) => {
         const task = doc.data();
         const taskCard = document.createElement('div');
