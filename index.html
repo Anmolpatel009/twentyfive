@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1232,7 +1233,8 @@
     const taskList = document.getElementById('taskList');
     const signupBtn = document.getElementById('signupBtn');
      
-
+    // User data (replace with actual authentication/user state management)
+    let currentUserEmail = null; // Placeholder for logged-in user's email
     // Modal Functions
     openModalBtn.addEventListener('click', () => {
       modal.style.display = 'flex';
@@ -1366,11 +1368,12 @@
         taskList.innerHTML = '<div class="no-tasks">No tasks posted yet. Be the first to post a task!</div>';
         return;
       }
-      ///////////////////////////////
-      // Initialize Firebase
-     
 
-///////////////////////////////////
+      // Function to update interested count for a task
+      const updateInterestedCount = (taskId, count) => {
+        const countElement = taskList.querySelector(`.task-card[data-task-id="${taskId}"] .view-interested-btn .count`);
+        if (countElement) countElement.textContent = count;
+      };
       querySnapshot.forEach((doc) => {
         const task = doc.data();
         const taskCard = document.createElement('div');
@@ -1437,4 +1440,3 @@
   </script>
 </body>
 </html>
-
