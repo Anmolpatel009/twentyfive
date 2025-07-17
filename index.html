@@ -178,6 +178,48 @@
     margin-right: 6px;
     font-size: 16px;
   }
+   /* Modal Styles */
+  .modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .modal-content {
+    background-color: white;
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+  }
+  
+  #user-identifier {
+    width: 100%;
+    padding: 10px;
+    margin: 15px 0;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  #confirm-identity {
+    background-color: #4CAF50;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+    width: 100%;
+  }
   
   /* Interested Button */
   .interested-btn {
@@ -1071,6 +1113,18 @@
     </div>
   </section>
 
+<!-- intrested modal -->
+  <!-- Add this modal to your page -->
+<div id="interest-modal" class="modal" style="display:none">
+  <div class="modal-content">
+    <h3>Confirm Your Identity</h3>
+    <p>Enter your registered username or email:</p>
+    <input type="text" id="user-identifier" placeholder="Username or email">
+    <button id="confirm-identity">Submit</button>
+    <p id="error-msg" style="color:red; display:none">User not found. Please register first.</p>
+  </div>
+</div>
+
   <!-- Task Submission Modal -->
   <div id="taskModal" class="modal-overlay">
     <div class="modal-content">
@@ -1278,6 +1332,130 @@
       }
     });
 
+// Initialize Firebase
+const firebaseConfig = { 
+  apiKey: "AIzaSyDPvCZs2wQeKlj5gluNnVp9wLQYBCUNcNE",
+  authDomain: "twentyfive-68777.firebaseapp.com",
+  projectId: "twentyfive-68777",
+  storageBucket: "twentyfive-68777.firebasestorage.app",
+  messagingSenderId: "81523227450",
+  appId: "1:81523227450:web:df2cf1ac868847a404ee03",
+  measurementId: "G-WPFP3NHVH0"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
+
+// Elements
+const modal = document.getElementById('interest-modal');
+const userInput = document.getElementById('user-identifier');
+const confirmBtn = document.getElementById('confirm-identity');
+const errorMsg = document.getElementById('error-msg');
+let currentTaskId = null;
+
+// Get all task cards
+const taskCards = document.querySelectorAll('.task-card');
+
+// Attach event listeners to each task card
+taskCards.forEach(card => {
+  const taskId = card.dataset.taskId;
+  
+  const interestedBtn = card.querySelector('.interested-btn');
+  const notInterestedBtn = card.querySelector('.not-interested-btn');
+  
+  // Handle Interested button click
+  interestedBtn.addEventListener('click', function() {
+    currentTaskId = taskId;
+    modal.style.display = 'block';
+    userInput.value = '';
+    errorMsg.style.display = 'none';
+  });
+
+  // Handle Not Interested button
+  notInterestedBtn.addEventListener('click', function() {
+    this.textContent = '❌ Not Interested';
+    this.disabled = true;
+    alert('Your disinterest has been noted.');
+  });
+});
+
+// Handle identity confirmation
+confirmBtn.addEventListener('click', async () => {
+  const identifier = userInput.value.trim();
+  if (!identifier) return;
+  
+  try {
+    // Search for user by username or email
+    const usersRef = db.collection('freelancers');
+    const snapshot = await usersRef
+      .where('username', '==', identifier)
+      .get();
+    
+    // If not found by username, try email
+    let freelancerDoc = null;
+    let freelancerData = null;
+    
+    if (snapshot.empty) {
+      const emailSnapshot = await usersRef
+        .where('email', '==', identifier)
+        .get();
+      if (!emailSnapshot.empty) {
+        freelancerDoc = emailSnapshot.docs[0];
+        freelancerData = freelancerDoc.data();
+      }
+    } else {
+      freelancerDoc = snapshot.docs[0];
+      freelancerData = freelancerDoc.data();
+    }
+    
+    if (!freelancerData) {
+      errorMsg.style.display = 'block';
+      return;
+    }
+    
+    // Check for required fields
+    if (!freelancerData.email || !freelancerData.skills || !freelancerData.contact) {
+      alert('User profile incomplete. Redirecting to profile completion.');
+      window.location.href = 'complete-profile.html';
+      return;
+    }
+    
+    // Add to interested collection with task ID
+    await db.collection('tasks').doc(currentTaskId)
+      .collection('interested').doc(freelancerDoc.id)
+      .set({
+        name: freelancerData.name || '',
+        email: freelancerData.email,
+        skills: freelancerData.skills,
+        contact: freelancerData.contact,
+        taskId: currentTaskId, // Store task ID with the interest
+        timestamp: firebase.firestore.FieldValue.serverTimestamp()
+      });
+    
+    // Close modal and show success
+    modal.style.display = 'none';
+    alert('Your interest has been recorded!');
+    
+    // Update UI for all buttons with this task ID
+    document.querySelectorAll(`.task-card[data-task-id="${currentTaskId}"] .interested-btn`)
+      .forEach(btn => {
+        btn.textContent = '✅ Interest Recorded!';
+        btn.disabled = true;
+      });
+    
+  } catch (error) {
+    console.error('Error:', error);
+    alert('An error occurred. Please try again.');
+  }
+});
+
+// Close modal if clicked outside
+window.addEventListener('click', (e) => {
+  if (e.target === modal) {
+    modal.style.display = 'none';
+  }
+});
+
     // Signup Button
     signupBtn.addEventListener('click', () => {
       window.location.href = 'signup.html';
@@ -1398,21 +1576,16 @@
               <button class="contact-btn" onclick="contactPoster('${task.posterPhone}', 'phone')">
                 <i class="fas fa-phone"></i> Call
               </button>
-
-
-       
-               <button class="action-btn interested-btn">
+<button class="action-btn interested-btn">
     <span class="emoji">👍</span>
     <span class="text">Interested</span>
   </button>
   
-  <!-- Not Interested Button -->
   <button class="action-btn not-interested-btn">
     <span class="emoji">✖</span>
     <span class="text">Not Interested</span>
   </button>
   
-  <!-- View Interested Button -->
   <button class="action-btn view-interested-btn">
     <span class="emoji">👥</span>
     <span class="text">View Interested (<span class="count">0</span>)</span>
